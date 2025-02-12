@@ -302,7 +302,7 @@ curl http://192.168.100.7/centos7/
 <br>
 
 
-## **Conclusion**  
+## **Summary**  
 PXE Boot simplifies OS installation in large-scale environments. It eliminates the need for manual installations, reduces setup time, and ensures consistency across multiple systems. With PXE and Kickstart, organizations can automate deployment processes efficiently. 🚀
 
 
@@ -312,6 +312,188 @@ PXE Boot simplifies OS installation in large-scale environments. It eliminates t
 <br>
 <br>
 <br>
+
+<br>
+<br>
+<br>
+
+
+## Implementation: Setting Up a PXE Server on CentOS 7
+
+
+
+<br>
+<br>
+
+
+
+
+# PXE Server Setup Guide
+
+## 1. Set Up the Server VM
+### 1.1 Create the Server VM
+- Create a new VM in your virtualization software (e.g., VirtualBox, VMware).
+- Allocate resources (e.g., 2 CPUs, 2 GB RAM).
+- Install a Linux distribution (e.g., Ubuntu Server) on the VM.
+
+### 1.2 Configure Network Settings
+- Set the network adapter to **Bridged Adapter** or **NAT with port forwarding**, ensuring communication with clients.
+- Assign a **static IP address** to the server (e.g., `192.168.1.10`).
+
+### 1.3 Update the System
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+**Explanation:** Ensures the latest package list and updates installed packages.
+
+## 2. Install Required Packages
+```bash
+sudo apt install isc-dhcp-server tftpd-hpa syslinux -y
+```
+**Explanation:** Installs necessary services:
+- **isc-dhcp-server:** Assigns IP addresses to clients.
+- **tftpd-hpa:** Serves boot files to clients.
+- **syslinux:** Provides PXELINUX bootloader.
+
+## 3. Configure the DHCP Server
+### 3.1 Edit the DHCP Configuration File
+```bash
+sudo nano /etc/dhcp/dhcpd.conf
+```
+**Explanation:** Opens the DHCP configuration file for editing.
+
+### 3.2 Add the Following Configuration:
+```plaintext
+allow booting;
+allow bootp;
+
+subnet 192.168.1.0 netmask 255.255.255.0 {
+    range 192.168.1.100 192.168.1.200;  # IP range for clients
+    option broadcast-address 192.168.1.255;  # Broadcast address
+    option routers 192.168.1.1;  # Default gateway
+    option domain-name-servers 8.8.8.8;  # DNS server
+    filename "pxelinux.0";  # Boot file
+    next-server 192.168.1.10;  # PXE server IP
+}
+```
+**Explanation:** Configures DHCP to assign IPs and provide PXE boot details.
+
+### 3.3 Restart the DHCP Service
+```bash
+sudo systemctl restart isc-dhcp-server
+```
+**Explanation:** Applies the new configuration.
+
+## 4. Configure the TFTP Server
+### 4.1 Edit the TFTP Configuration File
+```bash
+sudo nano /etc/default/tftpd-hpa
+```
+**Explanation:** Opens the TFTP configuration file.
+
+### 4.2 Update the Configuration:
+```plaintext
+RUN_DAEMON="yes"
+TFTP_USERNAME="tftp"
+TFTP_DIRECTORY="/var/lib/tftpboot"
+TFTP_ADDRESS="0.0.0.0:69"
+TFTP_OPTIONS="--secure"
+```
+**Explanation:** Configures TFTP to run as a daemon and serve boot files.
+
+### 4.3 Create TFTP Boot Directory
+```bash
+sudo mkdir -p /var/lib/tftpboot/pxelinux.cfg
+```
+**Explanation:** Creates necessary directories for PXE boot files.
+
+### 4.4 Copy PXE Bootloader
+```bash
+sudo cp /usr/lib/syslinux/pxelinux.0 /var/lib/tftpboot/
+```
+**Explanation:** Copies the PXELINUX bootloader to the TFTP directory.
+
+## 5. Create PXE Configuration File
+### 5.1 Create the Default Configuration File
+```bash
+sudo nano /var/lib/tftpboot/pxelinux.cfg/default
+```
+**Explanation:** Opens the PXE configuration file for editing.
+
+### 5.2 Add the Following Configuration:
+```plaintext
+DEFAULT menu.c32
+PROMPT 0
+TIMEOUT 300
+LABEL Linux
+    KERNEL vmlinuz
+    APPEND initrd=initrd.img root=/dev/nfs nfsroot=192.168.1.10:/nfsroot ip=dhcp rw
+```
+**Explanation:** Defines the default boot option and kernel parameters.
+
+## 6. Restart the TFTP Service
+```bash
+sudo systemctl restart tftpd-hpa
+```
+**Explanation:** Applies the TFTP configuration.
+
+---
+
+# Client Configuration
+
+## 7. Set Up the Client VMs
+### 7.1 Create Client VMs
+- Create two new VMs in your virtualization software.
+- Allocate resources (e.g., 1 CPU, 1 GB RAM).
+- Install a minimal Linux OS (e.g., Ubuntu Server).
+
+### 7.2 Configure Network Settings
+- Set the network adapter to **Bridged Adapter** or **NAT with port forwarding**.
+- Enable **PXE Boot** in BIOS/UEFI and prioritize it over the hard drive.
+
+## 8. Boot the Clients
+### 8.1 Start the First Client VM
+- Power on the VM.
+- It will request an IP from the DHCP server and download PXE bootloader.
+
+### 8.2 Monitor the Boot Process
+- Check if the client successfully loads the PXE boot menu.
+- If properly configured, the menu should display the boot options.
+
+### 8.3 Select a Boot Option
+- Use the keyboard to select a boot option.
+- The client loads the specified kernel and `initrd.img`, starting the boot process.
+
+### 8.4 Repeat for Second Client
+- Power on the second client VM and follow the same steps.
+
+## 9. Verify Network Boot
+- Ensure both clients successfully boot and communicate with the PXE server.
+- Check network settings to confirm they receive the correct IPs from DHCP.
+
+---
+
+## Summary
+This guide provides step-by-step instructions to set up a PXE server using **Ubuntu**, **isc-dhcp-server**, **TFTP**, and **PXELINUX**, allowing multiple clients to boot over the network. By following these steps, you ensure that clients can seamlessly retrieve and boot OS images from the PXE server.
+
+
+
+
+
+
+
+<br>
+<br>
+<br>
+
+
+
+
+
+
+
+
+
 
 
 

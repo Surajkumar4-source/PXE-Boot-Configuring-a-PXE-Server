@@ -318,7 +318,7 @@ PXE Boot simplifies OS installation in large-scale environments. It eliminates t
 <br>
 
 
-## Implementation: Setting Up a PXE Server on CentOS 7
+## Precise Implementation: Setting Up a PXE Server on CentOS 7
 
 
 
